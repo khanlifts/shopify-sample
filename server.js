@@ -5,6 +5,8 @@ const next = require('next');
 const { default: createShopifyAuth } = require('@shopify/koa-shopify-auth');
 const { verifyRequest } = require('@shopify/koa-shopify-auth');
 const session = require('koa-session');
+const { default: graphQLProxy } = require('@shopify/koa-shopify-graphql-proxy');
+const { ApiVersion } = require('@shopify/koa-shopify-graphql-proxy');
 
 dotenv.config();
 
@@ -24,7 +26,7 @@ app.prepare().then(() => {
     createShopifyAuth({
       apiKey: SHOPIFY_API_KEY,
       secret: SHOPIFY_API_SECRET_KEY,
-      scopes: ['read_products'],
+      scopes: ['read_products', 'write_products'],
       afterAuth(ctx) {
         const { shop, accessToken } = ctx.session;
         ctx.cookies.set('shopOrigin', shop, {
@@ -37,8 +39,8 @@ app.prepare().then(() => {
     }),
   );
 
+  server.use(graphQLProxy({ version: ApiVersion.April20 }));
   server.use(verifyRequest());
-
   server.use(async (ctx) => {
     await handle(ctx.req, ctx.res);
     ctx.respond = false;
